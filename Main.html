@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lom-La-Lai</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Mitr:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage: #8aab7e; --sage-light: #b5ccad; --sage-pale: #e8f0e5;
+    --cream: #f5eedc; --cream-dark: #e8d9b5;
+    --brown: #7a5c3a; --brown-light: #a8784e;
+    --text: #3a3226; --text-light: #7a6e62; --white: #fafaf7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  /* Phone shell — centered card on desktop, full-width on mobile */
+  .phone {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 40px rgba(0,0,0,0.08);
+  }
+
+  @media (min-width: 520px) {
+    body { padding: 24px 0 40px; align-items: flex-start; }
+    .phone { border-radius: 28px; min-height: auto; overflow: hidden; }
+  }
+
+  /* STATUS + HEADER */
+  .header { background: var(--sage); padding: 14px 20px 16px; text-align: center; }
+  .header h1 { font-family: 'Mitr', sans-serif; font-size: 22px; color: white; letter-spacing: 1px; }
+  .header p { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+  .content { flex: 1; overflow-y: auto; padding: 16px; background: var(--white); -webkit-overflow-scrolling: touch; }
+  .content::-webkit-scrollbar { display: none; }
+
+  /* BUDGET CARD */
+  .budget-card { background: var(--cream); border-radius: 18px; padding: 16px; margin-bottom: 16px; border: 1.5px solid var(--cream-dark); }
+  .budget-card-header { font-family: 'Mitr', sans-serif; font-size: 14px; color: var(--brown); margin-bottom: 12px; font-weight: 500; }
+  .budget-inner { display: flex; align-items: center; gap: 16px; }
+  .donut-wrap { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+  .donut-wrap svg { width: 90px; height: 90px; transform: rotate(-90deg); }
+  .donut-bg { fill: none; stroke: var(--cream-dark); stroke-width: 12; }
+  .donut-used { fill: none; stroke: var(--brown); stroke-width: 12; stroke-linecap: round; transition: stroke-dasharray 0.8s ease; }
+  .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; line-height: 1.2; }
+  .donut-pct { font-family: 'Mitr', sans-serif; font-size: 16px; color: var(--brown); font-weight: 600; }
+  .donut-label { font-size: 9px; color: var(--text-light); }
+  .over-budget-banner { display: none !important; margin-top: 10px; background: #fdf0ed; border: 1.5px solid #e8a090; border-radius: 10px; padding: 8px 12px; align-items: center; gap: 8px; }
+  .over-budget-banner.show { display: flex !important; }
+  .over-budget-text { font-size: 12px; color: #c0503a; font-weight: 600; flex: 1; }
+  .over-budget-amount { font-family: 'Mitr', sans-serif; font-size: 13px; color: #c0503a; font-weight: 700; }
+  .budget-details { flex: 1; }
+  .budget-title { font-family: 'Mitr', sans-serif; font-size: 13px; color: var(--brown); margin-bottom: 8px; }
+  .budget-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 3px 0; }
+  .budget-row .label { color: var(--text-light); }
+  .budget-row .amount { font-weight: 600; color: var(--text); }
+  .budget-row .unit { font-size: 11px; color: var(--text-light); margin-left: 2px; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+  .dot-total { background: var(--cream-dark); border: 1.5px solid var(--brown-light); }
+  .dot-used { background: var(--brown); }
+  .dot-remain { background: var(--sage-light); }
+  .add-budget-btn { display: block; width: 100%; margin-top: 10px; padding: 8px; border-radius: 10px; border: 1.5px dashed var(--brown-light); background: transparent; color: var(--brown-light); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .add-budget-btn:hover { background: var(--cream-dark); }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--sage-pale); border-radius: 14px; padding: 4px; margin-bottom: 16px; gap: 4px; }
+  .tab-btn { flex: 1; padding: 9px 0; border-radius: 10px; border: none; background: transparent; font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 600; color: var(--text-light); cursor: pointer; transition: all 0.25s; }
+  .tab-btn.active { background: var(--sage); color: white; box-shadow: 0 2px 8px rgba(138,171,126,0.35); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+
+  /* SECTION CARD */
+  .section-card { background: white; border-radius: 16px; border: 1.5px solid #ece8e0; overflow: hidden; margin-bottom: 12px; }
+  .section-card-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ece8e0; background: var(--sage-pale); }
+  .section-card-title { font-family: 'Mitr', sans-serif; font-size: 14px; color: var(--brown); }
+  .badge { background: var(--sage); color: white; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+  .badge-brown { background: var(--brown); }
+  .add-item-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: calc(100% - 32px); margin: 8px 16px 12px; padding: 10px; border-radius: 10px; border: 1.5px dashed var(--sage-light); background: transparent; color: var(--sage); font-family: 'Sarabun', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .add-item-btn:hover { background: var(--sage-pale); }
+
+  /* ── PLAN TAB ── */
+  .plan-booth-block { margin-bottom: 20px; }
+  .plan-booth-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .plan-booth-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--sage); border: 2px solid white; box-shadow: 0 0 0 2px var(--sage); flex-shrink: 0; margin-left: 10px; }
+  .plan-booth-name { font-family: 'Mitr', sans-serif; font-size: 14px; color: var(--brown); font-weight: 500; }
+  .plan-booth-numtag { font-size: 11px; color: white; background: var(--brown); padding: 2px 8px; border-radius: 20px; font-family: 'Mitr', sans-serif; font-weight: 600; letter-spacing: 0.5px; }
+  .plan-booth-items { margin-left: 16px; border-left: 2px solid var(--sage-light); padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .plan-book-row { background: white; border: 1.5px solid #ece8e0; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; position: relative; }
+  .plan-book-row::before { content: ''; position: absolute; left: -20px; top: 50%; transform: translateY(-50%); width: 10px; height: 2px; background: var(--sage-light); }
+  .plan-book-info { flex: 1; }
+  .plan-book-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .plan-book-author { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+  .plan-book-price { font-family: 'Mitr', sans-serif; font-size: 14px; color: var(--brown); }
+  .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .p-high { background: #e07b6a; } .p-med { background: #e0b46a; } .p-low { background: var(--sage-light); }
+
+  /* ── BOOTH TAB ── */
+  .map-section { margin-bottom: 12px; }
+  .map-toggle-btn { width: 100%; padding: 11px 16px; border: none; background: var(--cream); border-radius: 14px; border: 1.5px solid var(--cream-dark); display: flex; align-items: center; justify-content: space-between; font-family: 'Sarabun', sans-serif; font-size: 13px; color: var(--brown); cursor: pointer; font-weight: 600; }
+  .map-arrow { transition: transform 0.3s; display: inline-block; }
+  .map-arrow.open { transform: rotate(180deg); }
+  .map-wrap { display: none; margin-top: 8px; border-radius: 14px; overflow: hidden; border: 1.5px solid var(--cream-dark); }
+  .map-wrap.open { display: block; animation: fadeIn 0.3s ease; }
+  .map-wrap svg { width: 100%; display: block; }
+  .map-legend { display: flex; gap: 10px; padding: 8px 12px; background: white; border-top: 1px solid #ece8e0; flex-wrap: wrap; }
+  .map-legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-light); }
+  .map-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .search-bar-wrap { padding: 10px 16px 6px; border-bottom: 1px solid #ece8e0; }
+  .search-bar { display: flex; align-items: center; gap: 8px; background: var(--sage-pale); border-radius: 10px; padding: 8px 12px; }
+  .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-family: 'Sarabun', sans-serif; font-size: 13px; color: var(--text); }
+  .search-bar input::placeholder { color: var(--text-light); }
+
+  /* ── BOOTH ITEMS (styled like check-item) ── */
+  .booth-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0ece4; gap: 11px; cursor: pointer; transition: background 0.15s; }
+  .booth-item:last-child { border-bottom: none; }
+  .booth-item:hover { background: var(--sage-pale); }
+  .booth-item.hidden { display: none; }
+  .booth-num-badge { font-family: 'Mitr', sans-serif; font-size: 11px; font-weight: 600; background: var(--brown); color: white; border-radius: 8px; padding: 6px 7px; min-width: 40px; text-align: center; flex-shrink: 0; letter-spacing: 0.5px; line-height: 1.3; }
+  .booth-info { flex: 1; min-width: 0; }
+  .booth-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .booth-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .booth-tag { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--cream); color: var(--brown-light); border: 1px solid var(--cream-dark); }
+  .booth-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+  .booth-budget-val { font-family: 'Mitr', sans-serif; font-size: 14px; color: var(--sage); font-weight: 600; }
+  .booth-budget-label { font-size: 10px; color: var(--text-light); }
+  .booth-chevron { font-size: 11px; color: #ccc; margin-top: 2px; }
+
+  /* ── BOOTH DETAIL SHEET ── */
+  .booth-detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; justify-content: center; align-items: flex-end; }
+  .booth-detail-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+  .booth-detail-sheet { background: white; border-radius: 24px 24px 0 0; width: min(480px, 100vw); padding: 20px 20px 36px; max-height: 80vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+  .booth-detail-sheet::-webkit-scrollbar { display: none; }
+  /* header row inside detail */
+  .booth-detail-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+  .booth-detail-badge { font-family: 'Mitr', sans-serif; font-size: 15px; font-weight: 700; background: var(--brown); color: white; border-radius: 10px; padding: 8px 12px; flex-shrink: 0; letter-spacing: 1px; min-width: 54px; text-align: center; }
+  .booth-detail-name { font-family: 'Mitr', sans-serif; font-size: 18px; color: var(--brown); line-height: 1.3; }
+  .booth-detail-zone { font-size: 12px; color: var(--text-light); margin-top: 3px; }
+  .booth-detail-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .booth-detail-budget-row { display: flex; align-items: center; justify-content: space-between; background: var(--cream); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; }
+  .booth-detail-budget-label { font-size: 12px; color: var(--text-light); }
+  .booth-detail-budget-val { font-family: 'Mitr', sans-serif; font-size: 22px; color: var(--sage); font-weight: 600; }
+  /* book list inside booth detail */
+  .booth-detail-books { margin-bottom: 18px; }
+  .booth-detail-books-title { font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; }
+  .booth-detail-book-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0ece4; }
+  .booth-detail-book-row:last-child { border-bottom: none; }
+  .booth-detail-book-title { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .booth-detail-book-price { font-family: 'Mitr', sans-serif; font-size: 13px; color: var(--brown); flex-shrink: 0; }
+  .booth-detail-book-bought { font-size: 12px; color: var(--sage); flex-shrink: 0; }
+  /* action buttons */
+  .booth-detail-actions { display: flex; gap: 10px; }
+  .booth-detail-edit-btn { flex: 2; padding: 13px; border-radius: 12px; border: none; background: var(--sage); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600; color: white; cursor: pointer; }
+  .booth-detail-delete-btn { flex: 1; padding: 13px; border-radius: 12px; border: 1.5px solid #e8a090; background: #fdf0ed; font-family: 'Sarabun', sans-serif; font-size: 14px; color: #c0503a; cursor: pointer; }
+  .booth-detail-close-btn { padding: 13px 16px; border-radius: 12px; border: 1.5px solid #e0d8cc; background: white; font-size: 13px; color: var(--text-light); cursor: pointer; }
+
+  /* ── CHECK TAB ── */
+  .check-item { display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid #f0ece4; gap: 11px; transition: background 0.15s; cursor: pointer; }
+  .check-item:last-child { border-bottom: none; }
+  .check-item:hover { background: var(--sage-pale); }
+  .check-item.bought { background: #f5f9f3; opacity: 0.7; }
+  .check-circle { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--sage-light); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .check-item.bought .check-circle { background: var(--sage); border-color: var(--sage); }
+  .check-item.bought .check-circle::after { content: '✓'; color: white; font-size: 12px; font-weight: 700; }
+  .check-info { flex: 1; }
+  .check-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .check-item.bought .check-title { text-decoration: line-through; color: var(--text-light); }
+  .check-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+  .check-booth-tag { background: var(--cream); border: 1px solid var(--cream-dark); color: var(--brown-light); font-size: 10px; padding: 1px 6px; border-radius: 10px; }
+  .check-price { font-family: 'Mitr', sans-serif; font-size: 14px; color: var(--brown); font-weight: 600; flex-shrink: 0; }
+  .check-item.bought .check-price { color: var(--sage); }
+
+  .summary-bar { background: var(--cream); border-top: 1.5px solid var(--cream-dark); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .summary-bar .s-label { font-size: 11px; color: var(--text-light); }
+  .summary-bar .s-val { font-family: 'Mitr', sans-serif; font-size: 15px; color: var(--brown); font-weight: 600; }
+
+  /* MODALS */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; justify-content: center; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 24px 24px 0 0; width: min(480px, 100vw); padding: 24px 20px 36px; animation: slideUp 0.3s ease; max-height: 90vh; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-family: 'Mitr', sans-serif; font-size: 16px; color: var(--brown); margin-bottom: 16px; }
+  .modal label { display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px; margin-top: 12px; }
+  .modal input, .modal select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #e0d8cc; font-family: 'Sarabun', sans-serif; font-size: 14px; color: var(--text); background: var(--white); outline: none; }
+  .modal input:focus, .modal select:focus { border-color: var(--sage); }
+  .modal-row { display: flex; gap: 10px; }
+  .modal-row > div { flex: 1; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-cancel { flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid #e0d8cc; background: white; font-family: 'Sarabun', sans-serif; font-size: 14px; color: var(--text-light); cursor: pointer; }
+  .btn-confirm { flex: 2; padding: 12px; border-radius: 12px; border: none; background: var(--sage); font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(138,171,126,0.35); }
+  .btn-danger { flex: 1; padding: 12px; border-radius: 12px; border: none; background: #e07b6a; font-family: 'Sarabun', sans-serif; font-size: 14px; color: white; cursor: pointer; }
+
+  /* DETAIL SHEET */
+  .detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; justify-content: center; align-items: flex-end; }
+  .detail-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+  .detail-sheet { background: white; border-radius: 24px 24px 0 0; width: min(480px, 100vw); padding: 20px 20px 40px; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+  .detail-sheet::-webkit-scrollbar { display: none; }
+  .detail-book-img { width: 100%; max-height: 220px; object-fit: contain; border-radius: 14px; background: var(--cream); margin-bottom: 14px; display: block; }
+  .detail-book-placeholder { width: 100%; height: 160px; background: var(--cream); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 48px; margin-bottom: 14px; }
+  .detail-title { font-family: 'Mitr', sans-serif; font-size: 18px; color: var(--brown); margin-bottom: 4px; }
+  .detail-meta { font-size: 12px; color: var(--text-light); margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .detail-price { font-family: 'Mitr', sans-serif; font-size: 20px; color: var(--sage); font-weight: 600; margin-bottom: 16px; }
+  .detail-actions { display: flex; gap: 10px; }
+  .detail-buy-btn { flex: 1; padding: 13px; border-radius: 12px; border: none; font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .detail-buy-btn.unbought { background: var(--sage); color: white; }
+  .detail-buy-btn.bought { background: var(--cream); color: var(--brown); border: 1.5px solid var(--cream-dark); }
+  .detail-close-btn { padding: 13px 18px; border-radius: 12px; border: 1.5px solid #e0d8cc; background: white; font-size: 13px; color: var(--text-light); cursor: pointer; }
+
+  .book-thumb { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--cream); }
+  .book-thumb-placeholder { width: 36px; height: 36px; border-radius: 8px; background: var(--cream); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+  .img-upload-area { border: 2px dashed var(--cream-dark); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 4px; position: relative; }
+  .img-upload-area:hover { border-color: var(--sage); background: var(--sage-pale); }
+  .img-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .img-upload-area.has-img { padding: 4px; border-style: solid; border-color: var(--sage-light); }
+  .img-upload-area img { width: 100%; max-height: 140px; object-fit: contain; border-radius: 8px; display: block; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: var(--brown); color: white; font-family: 'Sarabun', sans-serif; font-size: 13px; padding: 10px 20px; border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 200; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* Map interactive highlight */
+  .map-booth-rect { cursor: pointer; transition: opacity 0.2s; }
+  .map-booth-rect:hover { opacity: 0.7; }
+  .map-booth-rect.has-booth { stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 3px rgba(0,0,0,0.3)); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="header">
+    <h1>Lom-La-Lai 📚 <span id="sync-status" style="font-size:14px;vertical-align:middle;"></span></h1>
+  </div>
+  <div class="content">
+
+    <!-- BUDGET -->
+    <div class="budget-card">
+      <div class="budget-card-header">💰 งบประมาณของฉัน</div>
+      <div class="budget-inner">
+        <div class="donut-wrap">
+          <svg viewBox="0 0 90 90">
+            <circle class="donut-bg" cx="45" cy="45" r="33"/>
+            <circle class="donut-used" cx="45" cy="45" r="33" stroke-dasharray="0 207.3"/>
+          </svg>
+          <div class="donut-center">
+            <div class="donut-pct" id="pct-display">0%</div>
+            <div class="donut-label">ใช้แล้ว</div>
+          </div>
+        </div>
+        <div class="budget-details">
+          <div class="budget-title">สรุปงบ</div>
+          <div class="budget-row"><span class="label"><span class="dot dot-total"></span>ทั้งหมด</span><span><span class="amount" id="total-display">500</span><span class="unit"> บาท</span></span></div>
+          <div class="budget-row"><span class="label"><span class="dot dot-used"></span>ใช้แล้ว</span><span><span class="amount" id="used-display">0</span><span class="unit"> บาท</span></span></div>
+          <div class="budget-row"><span class="label"><span class="dot dot-remain"></span>คงเหลือ</span><span><span class="amount" id="remain-display">500</span><span class="unit"> บาท</span></span></div>
+        </div>
+      </div>
+      <button class="add-budget-btn" onclick="openBudgetModal()">✏️ ตั้งงบ / แก้ไขงบ</button>
+      <div class="over-budget-banner" id="over-budget-banner">
+        <span>⚠️</span>
+        <span class="over-budget-text">ใช้เงินเกินงบแล้ว!</span>
+        <span class="over-budget-amount" id="over-budget-amount"></span>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('plan')">📋 Plan</button>
+      <button class="tab-btn" onclick="switchTab('check')">✅ Check</button>
+      <button class="tab-btn" onclick="switchTab('booth')">🏠 Booth</button>
+    </div>
+
+    <!-- ══ PLAN TAB ══ -->
+    <div class="tab-pane active" id="tab-plan">
+      <div id="plan-list"></div>
+    </div>
+
+    <!-- ══ BOOTH TAB ══ -->
+    <div class="tab-pane" id="tab-booth">
+      <div class="map-section">
+        <button class="map-toggle-btn" onclick="toggleMap()">
+          <span>🗺️ ดูแผนผังบูธ</span>
+          <span class="map-arrow" id="map-arrow">▼</span>
+        </button>
+        <div class="map-wrap" id="map-wrap">
+          <svg id="booth-map" viewBox="0 0 340 205" xmlns="http://www.w3.org/2000/svg" style="background:#ede9e4;">
+            <!-- Zone backgrounds -->
+            <rect x="6" y="6" width="155" height="92" rx="7" fill="#e0edd9" stroke="#b5ccad" stroke-width="1.2"/>
+            <rect x="6" y="107" width="155" height="92" rx="7" fill="#f5eedc" stroke="#e8d9b5" stroke-width="1.2"/>
+            <rect x="170" y="6" width="164" height="92" rx="7" fill="#ede8f5" stroke="#c9b5d9" stroke-width="1.2"/>
+            <rect x="170" y="107" width="164" height="92" rx="7" fill="#f5e8e8" stroke="#d9b5b5" stroke-width="1.2"/>
+            <!-- Zone labels -->
+            <text x="13" y="20" font-family="Mitr" font-size="10" fill="#5a8a4e" font-weight="600">Zone A — นิยาย</text>
+            <text x="13" y="121" font-family="Mitr" font-size="10" fill="#8a6a2e" font-weight="600">Zone B — ไลฟ์สไตล์</text>
+            <text x="177" y="20" font-family="Mitr" font-size="10" fill="#6a4e8a" font-weight="600">Zone C — ศิลปะ</text>
+            <text x="177" y="121" font-family="Mitr" font-size="10" fill="#8a4e4e" font-weight="600">Zone D — วิชาการ</text>
+            <!-- Zone A -->
+            <rect class="map-booth-rect" data-booth="A01" x="13" y="26" width="38" height="22" rx="4" fill="#8aab7e"/><text pointer-events="none" x="32" y="37" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">A01</text>
+            <rect class="map-booth-rect" data-booth="A02" x="55" y="26" width="38" height="22" rx="4" fill="#8aab7e"/><text pointer-events="none" x="74" y="37" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">A02</text>
+            <rect class="map-booth-rect" data-booth="A03" x="97" y="26" width="38" height="22" rx="4" fill="#8aab7e"/><text pointer-events="none" x="116" y="37" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">A03</text>
+            <rect class="map-booth-rect" data-booth="A04" x="13" y="54" width="38" height="22" rx="4" fill="#a3c499"/><text pointer-events="none" x="32" y="65" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">A04</text>
+            <rect class="map-booth-rect" data-booth="A05" x="55" y="54" width="38" height="22" rx="4" fill="#a3c499"/><text pointer-events="none" x="74" y="65" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">A05</text>
+            <rect class="map-booth-rect" data-booth="A06" x="97" y="54" width="38" height="22" rx="4" fill="#a3c499"/><text pointer-events="none" x="116" y="65" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">A06</text>
+            <rect x="13" y="82" width="122" height="10" rx="3" fill="#b5ccad"/>
+            <!-- Zone B -->
+            <rect class="map-booth-rect" data-booth="B01" x="13" y="127" width="38" height="22" rx="4" fill="#d4a85a"/><text pointer-events="none" x="32" y="138" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">B01</text>
+            <rect class="map-booth-rect" data-booth="B02" x="55" y="127" width="38" height="22" rx="4" fill="#d4a85a"/><text pointer-events="none" x="74" y="138" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">B02</text>
+            <rect class="map-booth-rect" data-booth="B03" x="97" y="127" width="38" height="22" rx="4" fill="#d4a85a"/><text pointer-events="none" x="116" y="138" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">B03</text>
+            <rect class="map-booth-rect" data-booth="B04" x="13" y="155" width="60" height="22" rx="4" fill="#c49a4a"/><text pointer-events="none" x="43" y="166" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">B04</text>
+            <rect class="map-booth-rect" data-booth="B05" x="77" y="155" width="38" height="22" rx="4" fill="#c49a4a"/><text pointer-events="none" x="96" y="166" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">B05</text>
+            <rect x="13" y="183" width="135" height="10" rx="3" fill="#b8944a"/>
+            <!-- Zone C -->
+            <rect class="map-booth-rect" data-booth="C01" x="177" y="26" width="36" height="22" rx="4" fill="#9b7aba"/><text pointer-events="none" x="195" y="37" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">C01</text>
+            <rect class="map-booth-rect" data-booth="C02" x="217" y="26" width="36" height="22" rx="4" fill="#9b7aba"/><text pointer-events="none" x="235" y="37" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">C02</text>
+            <rect class="map-booth-rect" data-booth="C03" x="257" y="26" width="36" height="22" rx="4" fill="#9b7aba"/><text pointer-events="none" x="275" y="37" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">C03</text>
+            <rect class="map-booth-rect" data-booth="C04" x="297" y="26" width="32" height="22" rx="4" fill="#9b7aba"/><text pointer-events="none" x="313" y="37" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">C04</text>
+            <rect class="map-booth-rect" data-booth="C05" x="177" y="54" width="60" height="22" rx="4" fill="#b090d0"/><text pointer-events="none" x="207" y="65" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">C05</text>
+            <rect class="map-booth-rect" data-booth="C06" x="241" y="54" width="88" height="22" rx="4" fill="#b090d0"/><text pointer-events="none" x="285" y="65" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">C06</text>
+            <rect x="177" y="82" width="128" height="10" rx="3" fill="#c4a8e0"/>
+            <!-- Zone D -->
+            <rect class="map-booth-rect" data-booth="D01" x="177" y="127" width="36" height="22" rx="4" fill="#ba7a7a"/><text pointer-events="none" x="195" y="138" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">D01</text>
+            <rect class="map-booth-rect" data-booth="D02" x="217" y="127" width="36" height="22" rx="4" fill="#ba7a7a"/><text pointer-events="none" x="235" y="138" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">D02</text>
+            <rect class="map-booth-rect" data-booth="D03" x="257" y="127" width="36" height="22" rx="4" fill="#ba7a7a"/><text pointer-events="none" x="275" y="138" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">D03</text>
+            <rect class="map-booth-rect" data-booth="D04" x="297" y="127" width="32" height="22" rx="4" fill="#ba7a7a"/><text pointer-events="none" x="313" y="138" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">D04</text>
+            <rect class="map-booth-rect" data-booth="D05" x="177" y="155" width="80" height="22" rx="4" fill="#aa6868"/><text pointer-events="none" x="217" y="166" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">D05</text>
+            <rect class="map-booth-rect" data-booth="D06" x="261" y="155" width="68" height="22" rx="4" fill="#aa6868"/><text pointer-events="none" x="295" y="166" text-anchor="middle" dominant-baseline="central" font-family="Mitr" font-size="9" fill="white" font-weight="700">D06</text>
+            <rect x="177" y="183" width="152" height="10" rx="3" fill="#9a5a5a"/>
+            <text x="163" y="57" text-anchor="middle" font-size="7" fill="#bbb" font-family="Sarabun" transform="rotate(90,163,57)">ทางเดิน</text>
+          </svg>
+          <div class="map-legend">
+            <div class="map-legend-item"><div class="map-dot" style="background:#8aab7e"></div>Zone A นิยาย</div>
+            <div class="map-legend-item"><div class="map-dot" style="background:#d4a85a"></div>Zone B ไลฟ์สไตล์</div>
+            <div class="map-legend-item"><div class="map-dot" style="background:#9b7aba"></div>Zone C ศิลปะ</div>
+            <div class="map-legend-item"><div class="map-dot" style="background:#ba7a7a"></div>Zone D วิชาการ</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title">📍 บูธที่จะแวะ</span>
+          <span class="badge badge-brown" id="booth-count">0</span>
+        </div>
+        <div class="search-bar-wrap">
+          <div class="search-bar">
+            <span>🔍</span>
+            <input type="text" id="booth-search" placeholder="ค้นหาบูธ หรือเลขบูธ เช่น A01..." oninput="filterBooths()">
+          </div>
+        </div>
+        <div id="booth-list"></div>
+        <button class="add-item-btn" onclick="openAddBoothModal()">+ เพิ่มบูธที่จะแวะ</button>
+      </div>
+    </div>
+
+    <!-- ══ CHECK TAB ══ -->
+    <div class="tab-pane" id="tab-check">
+      <div id="check-list"></div>
+      <div class="summary-bar">
+        <div><div class="s-label">ซื้อแล้ว</div><div class="s-val" id="total-spent-label">฿0</div></div>
+        <div style="text-align:center"><div class="s-label">รวมทั้งหมด</div><div class="s-val" id="total-plan-label">฿0</div></div>
+        <div style="text-align:right"><div class="s-label">คงเหลือ</div><div class="s-val" id="total-remain-label">฿0</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL: งบ -->
+<div class="modal-overlay" id="budget-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💰 ตั้งงบประมาณ</div>
+    <label>งบทั้งหมด (บาท)</label>
+    <input type="number" id="input-total" placeholder="เช่น 500" value="500">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('budget-modal')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="saveBudget()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: เพิ่ม/แก้ไขบูธ -->
+<div class="modal-overlay" id="booth-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="booth-modal-title">🏠 เพิ่มบูธที่จะแวะ</div>
+    <div class="modal-row">
+      <div><label>ชื่อบูธ / สำนักพิมพ์</label><input type="text" id="input-bname" placeholder="ชื่อบูธ"></div>
+      <div><label>เลขบูธ</label><input type="text" id="input-bnum" placeholder="เช่น A01"></div>
+    </div>
+    <div class="modal-row">
+      <div><label>โซน</label><input type="text" id="input-bzone" placeholder="เช่น Zone A"></div>
+      <div><label>ตั้งงบ (บาท)</label><input type="number" id="input-bbudget" placeholder="0"></div>
+    </div>
+    <label>แท็ก (คั่นด้วยจุลภาค)</label>
+    <input type="text" id="input-btags" placeholder="เช่น นิยาย, ลด 30%">
+    <input type="hidden" id="input-bedit-idx" value="">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('booth-modal')">ยกเลิก</button>
+      <button class="btn-danger" id="booth-delete-btn" style="display:none;" onclick="deleteBooth()">ลบ</button>
+      <button class="btn-confirm" onclick="saveBooth()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: เพิ่มหนังสือใน Plan -->
+<div class="modal-overlay" id="wish-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📝 เพิ่มหนังสือใน Plan</div>
+    <label>บูธ</label>
+    <select id="input-wbooth-select" onchange="onPlanBoothChange()">
+      <option value="">-- เลือกบูธ --</option>
+    </select>
+    <label>หนังสือ</label>
+    <select id="input-wbook-select">
+      <option value="">-- เลือกบูธก่อน --</option>
+    </select>
+    <label>ระดับความต้องการ</label>
+    <select id="input-wpriority">
+      <option value="p-high">🔴 ต้องได้</option>
+      <option value="p-med">🟡 อยากได้</option>
+      <option value="p-low">🟢 ถ้ามีงบ</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('wish-modal')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="addWish()">เพิ่มใน Plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: เพิ่มสิ่งที่จะซื้อ (Check) -->
+<div class="modal-overlay" id="check-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🛒 เพิ่มสิ่งที่จะซื้อ</div>
+    <label>บูธ</label>
+    <select id="input-check-booth" onchange="handleCheckBoothSelect()">
+      <option value="">-- เลือกบูธ --</option>
+    </select>
+    <div id="check-no-booth-warn" style="display:none;margin-top:8px;padding:10px 12px;background:#fdf0ed;border-radius:10px;border:1.5px solid #e8a090;font-size:12px;color:#c0503a;">
+      ⚠️ ยังไม่มีบูธในรายการ — ไปเพิ่มบูธในแท็บ <strong>Booth</strong> ก่อนนะ
+    </div>
+    <label>รูปปกหนังสือ (ไม่บังคับ)</label>
+    <div class="img-upload-area" id="img-upload-area">
+      <div id="img-upload-preview">📷<br><span style="font-size:12px;color:var(--text-light);">แตะเพื่อเลือกรูป</span></div>
+      <input type="file" accept="image/*" onchange="handleImgUpload(this)">
+    </div>
+    <label>ชื่อหนังสือ</label>
+    <input type="text" id="input-check-name" placeholder="ชื่อหนังสือ">
+    <div class="modal-row">
+      <div><label>ผู้แต่ง</label><input type="text" id="input-check-author" placeholder="ผู้แต่ง"></div>
+      <div><label>ราคา (บาท)</label><input type="number" id="input-check-price" placeholder="0"></div>
+    </div>
+    <label>ระดับความต้องการ</label>
+    <select id="input-check-priority">
+      <option value="p-high">🔴 ต้องได้</option>
+      <option value="p-med">🟡 อยากได้</option>
+      <option value="p-low">🟢 ถ้ามีงบ</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('check-modal')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="addCheckItem()">เพิ่มรายการ</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOOTH DETAIL SHEET -->
+<div class="booth-detail-overlay" id="booth-detail-overlay" onclick="closeBoothDetail(event)">
+  <div class="booth-detail-sheet">
+    <div class="modal-handle" style="margin-bottom:16px;"></div>
+    <div class="booth-detail-header">
+      <div class="booth-detail-badge" id="bd-num">A01</div>
+      <div>
+        <div class="booth-detail-name" id="bd-name">ซีเอ็ด บุ๊คส์</div>
+        <div class="booth-detail-zone" id="bd-zone">Zone A</div>
+      </div>
+    </div>
+    <div class="booth-detail-tags" id="bd-tags"></div>
+    <div class="booth-detail-budget-row">
+      <div class="booth-detail-budget-label">💰 งบที่ตั้งไว้สำหรับบูธนี้</div>
+      <div class="booth-detail-budget-val" id="bd-budget">฿0</div>
+    </div>
+    <div class="booth-detail-books" id="bd-books-wrap">
+      <div class="booth-detail-books-title">หนังสือที่วางแผนซื้อ</div>
+      <div id="bd-books-list"></div>
+    </div>
+    <div class="booth-detail-actions">
+      <button class="booth-detail-edit-btn" onclick="editBoothFromDetail()">✏️ แก้ไขข้อมูลบูธ</button>
+      <button class="booth-detail-delete-btn" onclick="deleteBoothFromDetail()">🗑️ ลบ</button>
+      <button class="booth-detail-close-btn" onclick="closeBoothDetail()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL SHEET -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-sheet" id="detail-sheet">
+    <div class="modal-handle" style="margin-bottom:16px;"></div>
+    <div id="detail-img-wrap"></div>
+    <div class="detail-title" id="detail-title"></div>
+    <div class="detail-meta" id="detail-meta"></div>
+    <div class="detail-price" id="detail-price"></div>
+    <div class="detail-actions">
+      <button class="detail-buy-btn" id="detail-buy-btn" onclick="toggleBuyFromDetail()"></button>
+      <button class="detail-close-btn" onclick="closeDetail()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtLag-6cYsqITFKRDtdDm3ZCcDsiu7Bbt6Le2eCVa461wxrIQ2ty33egbXhw3NjYy3_g/exec';
+
+  let totalBudget = 500, usedBudget = 0;
+  let detailBook = null, detailBoothName = null;
+  let isSyncing = false;
+  let newBookImg = null;
+
+  // ── boothList: array of booth objects ──
+  let boothList = [
+    { name:'ซีเอ็ด บุ๊คส์', num:'A01', zone:'Zone A', budget:30, tags:['นิยาย','ลด 30%'] },
+    { name:'Salmon Books', num:'B02', zone:'Zone B', budget:20, tags:['ไลฟ์สไตล์'] },
+    { name:'Bookscape', num:'C03', zone:'Zone C', budget:25, tags:['ศิลปะ','ออกแบบ'] },
+    { name:'แพรวสำนักพิมพ์', num:'D01', zone:'Zone D', budget:25, tags:['วิชาการ'] },
+  ];
+
+  let planData = {
+    'ซีเอ็ด บุ๊คส์': { num:'A01', books:[
+      {title:'The Midnight Library', author:'Matt Haig', price:299, priority:'p-high', bought:false},
+      {title:'Atomic Habits (TH)', author:'James Clear', price:275, priority:'p-high', bought:false},
+    ]},
+    'แพรวสำนักพิมพ์': { num:'D01', books:[
+      {title:'ขุนนางจอมแสบ', author:'นักเขียนไทย', price:189, priority:'p-med', bought:false},
+      {title:'Sapiens ภาษาไทย', author:'Yuval Noah Harari', price:390, priority:'p-med', bought:false},
+    ]},
+    'Bookscape': { num:'C03', books:[
+      {title:'วาดภาพสไตล์ Minimal', author:'ทีมบรรณาธิการ', price:250, priority:'p-low', bought:false},
+    ]},
+  };
+
+  // ── Sync ──
+  function setSyncStatus(state) {
+    const el = document.getElementById('sync-status');
+    if (!el) return;
+    if (state==='loading') { el.textContent='⏳'; }
+    else if (state==='saving') { el.textContent='💾'; }
+    else if (state==='ok') { el.textContent='✅'; setTimeout(()=>{ el.textContent=''; }, 2000); }
+    else if (state==='error') { el.textContent='⚠️'; setTimeout(()=>{ el.textContent=''; }, 3000); }
+    else el.textContent='';
+  }
+
+  async function loadFromSheet() {
+    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_')) return;
+    setSyncStatus('loading');
+    try {
+      const res = await fetch(SCRIPT_URL, { method:'GET', redirect:'follow' });
+      const data = await res.json();
+      if (data.ok) {
+        planData    = data.planData    || planData;
+        boothList   = data.boothList   || boothList;
+        totalBudget = data.totalBudget || 500;
+        usedBudget  = data.usedBudget  ||
+          Object.values(planData).reduce((s,d)=>s+d.books.filter(b=>b.bought).reduce((a,b)=>a+b.price,0),0);
+        setSyncStatus('ok');
+      } else setSyncStatus('error');
+    } catch(e) { setSyncStatus('error'); }
+  }
+
+  let saveTimer = null;
+  function scheduleSync() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveToSheet, 1200);
+  }
+  async function saveToSheet() {
+    if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_')) return;
+    if (isSyncing) return;
+    isSyncing = true; setSyncStatus('saving');
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action:'save', planData, boothList, totalBudget })
+      });
+      const data = await res.json();
+      setSyncStatus(data.ok ? 'ok' : 'error');
+    } catch(e) { setSyncStatus('error'); }
+    isSyncing = false;
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['plan','check','booth'][i]===name));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+  }
+
+  function updateDonut() {
+    const over = usedBudget > totalBudget;
+    const pct = Math.min(usedBudget/totalBudget, 1), C = 2*Math.PI*33;
+    const donutEl = document.querySelector('.donut-used');
+    donutEl.setAttribute('stroke-dasharray',`${(C*pct).toFixed(1)} ${(C*(1-pct)).toFixed(1)}`);
+    donutEl.style.stroke = over ? '#e07b6a' : 'var(--brown)';
+    document.getElementById('pct-display').textContent = Math.round(usedBudget/totalBudget*100)+'%';
+    document.getElementById('pct-display').style.color = over ? '#c0503a' : 'var(--brown)';
+    document.getElementById('total-display').textContent = totalBudget;
+    document.getElementById('used-display').textContent = usedBudget;
+    document.getElementById('used-display').style.color = over ? '#c0503a' : 'var(--text)';
+    document.getElementById('remain-display').textContent = over ? '0' : totalBudget-usedBudget;
+    const banner = document.getElementById('over-budget-banner');
+    if (over) { banner.classList.add('show'); document.getElementById('over-budget-amount').textContent = '+฿'+(usedBudget-totalBudget)+' เกินงบ'; }
+    else banner.classList.remove('show');
+    document.getElementById('total-spent-label').textContent = '฿'+usedBudget;
+    document.getElementById('total-remain-label').textContent = over ? '-฿'+(usedBudget-totalBudget) : '฿'+(totalBudget-usedBudget);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2500);
+  }
+
+  function toggleMap() {
+    document.getElementById('map-wrap').classList.toggle('open');
+    document.getElementById('map-arrow').classList.toggle('open');
+  }
+
+  // ── Map: highlight booths that are in boothList ──
+  function updateMapHighlights() {
+    const myNums = new Set(boothList.map(b => b.num.toUpperCase()));
+    document.querySelectorAll('.map-booth-rect').forEach(rect => {
+      const id = rect.dataset.booth;
+      if (myNums.has(id)) {
+        rect.classList.add('has-booth');
+        rect.setAttribute('stroke', '#fff');
+        rect.setAttribute('stroke-width', '2.5');
+        rect.style.filter = 'drop-shadow(0 0 4px rgba(0,0,0,0.4))';
+        rect.title = boothList.find(b=>b.num.toUpperCase()===id)?.name || id;
+      } else {
+        rect.classList.remove('has-booth');
+        rect.setAttribute('stroke', 'none');
+        rect.style.filter = '';
+      }
+      // Click on map rect → scroll to booth in list or open add with that num
+      rect.onclick = () => {
+        const booth = boothList.find(b=>b.num.toUpperCase()===id);
+        if (booth) {
+          document.getElementById('booth-search').value = id.toLowerCase();
+          filterBooths();
+          showToast(`📍 ${booth.name} (${id})`);
+        } else {
+          openAddBoothModal(id);
+        }
+      };
+    });
+  }
+
+  // ── BOOTH LIST RENDER ──
+  function renderBooths() {
+    const container = document.getElementById('booth-list');
+    container.innerHTML = '';
+    boothList.forEach((b, idx) => {
+      const el = document.createElement('div');
+      el.className = 'booth-item';
+      el.dataset.name = (b.name||'').toLowerCase();
+      el.dataset.num = (b.num||'').toLowerCase();
+      const tagHTML = (b.tags||[]).map(t=>`<span class="booth-tag">${t}</span>`).join('');
+      // Count books in this booth
+      const books = planData[b.name]?.books || [];
+      const boughtCount = books.filter(bk=>bk.bought).length;
+      const bookBadge = books.length > 0
+        ? `<span class="booth-tag" style="background:var(--sage-pale);color:var(--sage);border-color:var(--sage-light);">📚 ${boughtCount}/${books.length}</span>`
+        : '';
+      el.innerHTML = `
+        <div class="booth-num-badge">${b.num||'?'}</div>
+        <div class="booth-info">
+          <div class="booth-name">${b.name}</div>
+          <div class="booth-tags">${tagHTML}${b.zone?`<span class="booth-tag">${b.zone}</span>`:''}${bookBadge}</div>
+        </div>
+        <div class="booth-right">
+          <div class="booth-budget-val">฿${b.budget||0}</div>
+          <div class="booth-budget-label">ตั้งงบ</div>
+          <div class="booth-chevron">›</div>
+        </div>`;
+      el.addEventListener('click', () => openBoothDetail(idx));
+      container.appendChild(el);
+    });
+    document.getElementById('booth-count').textContent = boothList.length;
+    updateMapHighlights();
+  }
+
+  function filterBooths() {
+    const q = document.getElementById('booth-search').value.toLowerCase();
+    document.querySelectorAll('#booth-list .booth-item').forEach(item => {
+      const match = item.dataset.name.includes(q) || item.dataset.num.includes(q);
+      item.classList.toggle('hidden', q.length>0 && !match);
+    });
+  }
+
+  // ── BOOTH CRUD ──
+  function openAddBoothModal(prefillNum='') {
+    document.getElementById('booth-modal-title').textContent = '🏠 เพิ่มบูธที่จะแวะ';
+    document.getElementById('input-bname').value = '';
+    document.getElementById('input-bnum').value = prefillNum;
+    document.getElementById('input-bzone').value = '';
+    document.getElementById('input-bbudget').value = '';
+    document.getElementById('input-btags').value = '';
+    document.getElementById('input-bedit-idx').value = '';
+    document.getElementById('booth-delete-btn').style.display = 'none';
+    document.getElementById('booth-modal').classList.add('open');
+  }
+
+  function openEditBoothModal(idx) {
+    const b = boothList[idx];
+    document.getElementById('booth-modal-title').textContent = '✏️ แก้ไขบูธ';
+    document.getElementById('input-bname').value = b.name;
+    document.getElementById('input-bnum').value = b.num;
+    document.getElementById('input-bzone').value = b.zone||'';
+    document.getElementById('input-bbudget').value = b.budget||'';
+    document.getElementById('input-btags').value = (b.tags||[]).join(', ');
+    document.getElementById('input-bedit-idx').value = idx;
+    document.getElementById('booth-delete-btn').style.display = 'block';
+    document.getElementById('booth-modal').classList.add('open');
+  }
+
+  function saveBooth() {
+    const name = document.getElementById('input-bname').value.trim();
+    const num = document.getElementById('input-bnum').value.trim().toUpperCase();
+    const zone = document.getElementById('input-bzone').value.trim();
+    const budget = parseInt(document.getElementById('input-bbudget').value)||0;
+    const tags = document.getElementById('input-btags').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const editIdx = document.getElementById('input-bedit-idx').value;
+    if (!name) { showToast('⚠️ กรุณากรอกชื่อบูธ'); return; }
+    const boothObj = { name, num, zone, budget, tags };
+    if (editIdx !== '') {
+      const idx = parseInt(editIdx);
+      const oldName = boothList[idx].name;
+      boothList[idx] = boothObj;
+      if (oldName !== name && planData[oldName]) {
+        planData[name] = { ...planData[oldName], num };
+        delete planData[oldName];
+      } else if (planData[oldName]) {
+        planData[oldName].num = num;
+      }
+      showToast('✅ แก้ไขบูธแล้ว');
+    } else {
+      boothList.push(boothObj);
+      showToast('✅ เพิ่มบูธแล้ว');
+    }
+    renderBooths(); renderPlan(); renderCheck(); scheduleSync();
+    closeModal('booth-modal');
+  }
+
+  // ── BOOTH DETAIL SHEET ──
+  let currentBoothDetailIdx = null;
+
+  function openBoothDetail(idx) {
+    currentBoothDetailIdx = idx;
+    const b = boothList[idx];
+    document.getElementById('bd-num').textContent = b.num || '?';
+    document.getElementById('bd-name').textContent = b.name;
+    document.getElementById('bd-zone').textContent = b.zone || '';
+    document.getElementById('bd-budget').textContent = '฿' + (b.budget || 0);
+    // Tags
+    const tagsEl = document.getElementById('bd-tags');
+    tagsEl.innerHTML = (b.tags||[]).map(t=>`<span class="booth-tag" style="font-size:12px;padding:3px 10px;">${t}</span>`).join('');
+    // Books in this booth
+    const books = planData[b.name]?.books || [];
+    const booksListEl = document.getElementById('bd-books-list');
+    const wrapEl = document.getElementById('bd-books-wrap');
+    if (books.length === 0) {
+      wrapEl.style.display = 'none';
+    } else {
+      wrapEl.style.display = 'block';
+      booksListEl.innerHTML = books.map(bk => `
+        <div class="booth-detail-book-row">
+          <div class="priority-dot ${bk.priority}" style="flex-shrink:0;"></div>
+          <div class="booth-detail-book-title">${bk.title}</div>
+          <div class="booth-detail-book-price">฿${bk.price}</div>
+          ${bk.bought ? '<div class="booth-detail-book-bought">✓</div>' : ''}
+        </div>`).join('');
+    }
+    document.getElementById('booth-detail-overlay').classList.add('open');
+  }
+
+  function closeBoothDetail(e) {
+    if (e && e.target !== document.getElementById('booth-detail-overlay')) return;
+    document.getElementById('booth-detail-overlay').classList.remove('open');
+    currentBoothDetailIdx = null;
+  }
+
+  function editBoothFromDetail() {
+    const idx = currentBoothDetailIdx;
+    document.getElementById('booth-detail-overlay').classList.remove('open');
+    openEditBoothModal(idx);
+  }
+
+  function deleteBoothFromDetail() {
+    const idx = currentBoothDetailIdx;
+    const b = boothList[idx];
+    if (!confirm(`ลบบูธ "${b.name}" ออกจากรายการ?`)) return;
+    document.getElementById('booth-detail-overlay').classList.remove('open');
+    currentBoothDetailIdx = null;
+    boothList.splice(idx, 1);
+    if (planData[b.name]) delete planData[b.name];
+    renderBooths(); renderPlan(); renderCheck();
+    usedBudget = Object.values(planData).reduce((s,d)=>s+d.books.filter(bk=>bk.bought).reduce((a,bk)=>a+bk.price,0),0);
+    updateDonut(); scheduleSync();
+    showToast(`🗑️ ลบ "${b.name}" แล้ว`);
+  }
+
+  // ── PLAN ──
+  function renderPlan() {
+    const container = document.getElementById('plan-list'); container.innerHTML='';
+    const card = document.createElement('div'); card.className='section-card'; card.style.marginBottom='12px';
+    const cardHeader = document.createElement('div'); cardHeader.className='section-card-header';
+    const totalBooks = Object.values(planData).reduce((s,d)=>s+d.books.length,0);
+    cardHeader.innerHTML = `<span class="section-card-title">📋 แผนการซื้อ</span><span class="badge badge-brown">${totalBooks}</span>`;
+    card.appendChild(cardHeader);
+    const inner = document.createElement('div'); inner.style.padding='12px 16px'; card.appendChild(inner);
+
+    for(const [boothName,data] of Object.entries(planData)) {
+      if (data.books.length === 0) continue;
+      const allBought = data.books.every(b=>b.bought);
+      const block = document.createElement('div'); block.className='plan-booth-block';
+      const booksHTML = data.books.map((b,bi)=>{
+        const dim = b.bought ? 'opacity:0.4;' : '';
+        const strike = b.bought ? 'text-decoration:line-through;color:var(--text-light);' : '';
+        const tick = b.bought ? '<span style="font-size:12px;color:var(--sage);flex-shrink:0;">✓</span>' : '';
+        const thumb = b.img ? `<img class="book-thumb" src="${b.img}" alt="" style="width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;">` : '';
+        return `<div class="plan-book-row" style="${dim};cursor:pointer;" data-booth="${boothName}" data-bi="${bi}"><div class="priority-dot ${b.priority}"></div>${thumb}<div style="flex:1;font-size:13px;font-weight:600;${strike}">${b.title}</div>${tick}</div>`;
+      }).join('');
+      const doneBadge = allBought ? '<span style="margin-left:auto;font-size:10px;background:var(--sage);color:white;padding:2px 8px;border-radius:20px;font-weight:700;">✓ ครบแล้ว</span>' : '';
+      const dotStyle = allBought ? 'background:var(--sage-light);box-shadow:0 0 0 2px var(--sage-light)' : '';
+      const nameStyle = allBought ? 'color:var(--text-light)' : '';
+      block.innerHTML = `<div class="plan-booth-header"><div class="plan-booth-dot" style="${dotStyle}"></div><div class="plan-booth-name" style="${nameStyle}">${boothName}</div><div class="plan-booth-numtag" style="margin-left:6px;">${data.num||''}</div>${doneBadge}</div><div class="plan-booth-items">${booksHTML}</div>`;
+      inner.appendChild(block);
+      block.querySelectorAll('.plan-book-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const bn = row.dataset.booth, bi = parseInt(row.dataset.bi);
+          if (planData[bn]) openDetail(planData[bn].books[bi], bn, planData[bn].num);
+        });
+      });
+    }
+    if (Object.values(planData).every(d=>d.books.length===0)) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'text-align:center;padding:20px;color:var(--text-light);font-size:13px;';
+      empty.textContent = 'ยังไม่มีหนังสือในแผน เพิ่มสิ่งที่จะซื้อในแท็บ Check ก่อนนะ 📖';
+      inner.appendChild(empty);
+    }
+    const addBtn = document.createElement('button'); addBtn.className='add-item-btn'; addBtn.textContent='+ เพิ่มหนังสือ'; addBtn.onclick=openAddWishModal; card.appendChild(addBtn);
+    container.appendChild(card);
+  }
+
+  // ── CHECK ──
+  function makeCheckItem(book, boothName, boothNum) {
+    const item = document.createElement('div');
+    item.className = 'check-item' + (book.bought ? ' bought' : '');
+    const thumbHTML = book.img ? `<img class="book-thumb" src="${book.img}" alt="">` : `<div class="book-thumb-placeholder">📖</div>`;
+    item.innerHTML = `
+      <div class="check-circle"></div>
+      ${thumbHTML}
+      <div class="check-info" style="cursor:pointer;">
+        <div class="check-title">${book.title}</div>
+        <div class="check-sub"><span class="check-booth-tag">${boothName}${boothNum?' '+boothNum:''}</span>${book.author?' '+book.author:''}</div>
+      </div>
+      <div class="check-price">${book.price?'฿'+book.price:''}</div>`;
+    item.querySelector('.check-circle').addEventListener('click', e => {
+      e.stopPropagation();
+      book.bought = !book.bought;
+      usedBudget = Object.values(planData).reduce((s,d)=>s+d.books.filter(b=>b.bought).reduce((a,b)=>a+b.price,0),0);
+      updateDonut(); renderPlan(); renderCheck(); scheduleSync();
+      showToast(book.bought ? `✅ ซื้อ "${book.title}" แล้ว!` : `↩️ ยกเลิก "${book.title}"`);
+    });
+    item.querySelector('.check-info').addEventListener('click', e => { e.stopPropagation(); openDetail(book, boothName, boothNum); });
+    if (book.img) item.querySelector('.book-thumb').addEventListener('click', e => { e.stopPropagation(); openDetail(book, boothName, boothNum); });
+    return item;
+  }
+
+  function renderCheck() {
+    const container = document.getElementById('check-list'); container.innerHTML='';
+    let totalPlan=0, totalBought=0;
+    const pendingBooks=[], boughtBooks=[];
+    for(const [boothName,data] of Object.entries(planData)) {
+      data.books.forEach(book => {
+        totalPlan += book.price;
+        if (book.bought) { totalBought += book.price; boughtBooks.push({book,boothName,num:data.num}); }
+        else pendingBooks.push({book,boothName,num:data.num});
+      });
+    }
+    const pendingSection = document.createElement('div'); pendingSection.className='section-card';
+    const pendingHeader = document.createElement('div'); pendingHeader.className='section-card-header';
+    pendingHeader.innerHTML = `<span class="section-card-title">🛒 จะซื้อ</span><span class="badge badge-brown">${pendingBooks.length}</span>`;
+    pendingSection.appendChild(pendingHeader);
+    if (pendingBooks.length===0) {
+      const empty = document.createElement('div'); empty.style.cssText='text-align:center;padding:20px;color:var(--text-light);font-size:13px;'; empty.innerHTML='🎉 ซื้อครบทุกอย่างแล้ว!'; pendingSection.appendChild(empty);
+    } else { pendingBooks.forEach(({book,boothName,num})=>pendingSection.appendChild(makeCheckItem(book,boothName,num))); }
+    const addBtn = document.createElement('button'); addBtn.className='add-item-btn'; addBtn.textContent='+ เพิ่มสิ่งที่จะซื้อ'; addBtn.onclick=openAddCheckModal; pendingSection.appendChild(addBtn);
+    container.appendChild(pendingSection);
+    if (boughtBooks.length>0) {
+      const boughtSection = document.createElement('div'); boughtSection.className='section-card';
+      const bh = document.createElement('div'); bh.className='section-card-header'; bh.innerHTML=`<span class="section-card-title">✅ ซื้อแล้ว</span><span class="badge">${boughtBooks.length}</span>`; boughtSection.appendChild(bh);
+      boughtBooks.forEach(({book,boothName,num})=>boughtSection.appendChild(makeCheckItem(book,boothName,num)));
+      container.appendChild(boughtSection);
+    }
+    document.getElementById('total-spent-label').textContent = '฿'+totalBought;
+    document.getElementById('total-plan-label').textContent = '฿'+totalPlan;
+    document.getElementById('total-remain-label').textContent = '฿'+Math.max(totalBudget-totalBought,0);
+  }
+
+  // ── MODALS ──
+  function openBudgetModal() { document.getElementById('input-total').value=totalBudget; document.getElementById('budget-modal').classList.add('open'); }
+
+  function openAddWishModal() {
+    const sel = document.getElementById('input-wbooth-select');
+    sel.innerHTML = '<option value="">-- เลือกบูธ --</option>' +
+      Object.entries(planData).map(([name,d])=>`<option value="${name}">${name}${d.num?' ('+d.num+')':''}</option>`).join('');
+    document.getElementById('input-wbook-select').innerHTML = '<option value="">-- เลือกบูธก่อน --</option>';
+    document.getElementById('wish-modal').classList.add('open');
+  }
+  function onPlanBoothChange() {
+    const booth = document.getElementById('input-wbooth-select').value;
+    const bookSel = document.getElementById('input-wbook-select');
+    if (!booth || !planData[booth]) { bookSel.innerHTML='<option value="">-- เลือกบูธก่อน --</option>'; return; }
+    const books = planData[booth].books;
+    bookSel.innerHTML = books.length===0
+      ? '<option value="">ไม่มีหนังสือในบูธนี้</option>'
+      : '<option value="">-- เลือกหนังสือ --</option>' + books.map((b,i)=>`<option value="${i}">${b.title}</option>`).join('');
+  }
+
+  function openAddCheckModal() {
+    const sel = document.getElementById('input-check-booth');
+    const warn = document.getElementById('check-no-booth-warn');
+    if (boothList.length === 0) {
+      sel.innerHTML = '<option value="">-- ยังไม่มีบูธ --</option>';
+      sel.disabled = true;
+      warn.style.display = 'block';
+    } else {
+      sel.innerHTML = '<option value="">-- เลือกบูธ --</option>' +
+        boothList.map(b=>`<option value="${b.name}">${b.name}${b.num?' ('+b.num+')':''}</option>`).join('');
+      sel.disabled = false;
+      warn.style.display = 'none';
+    }
+    document.getElementById('check-modal').classList.add('open');
+  }
+  function handleCheckBoothSelect() { /* ไม่ต้องทำอะไร เพราะไม่มี __new__ แล้ว */ }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); }));
+
+  function saveBudget() {
+    const v = parseInt(document.getElementById('input-total').value);
+    if (!isNaN(v)&&v>0) { totalBudget=v; updateDonut(); scheduleSync(); }
+    closeModal('budget-modal');
+  }
+
+  function addCheckItem() {
+    const boothKey = document.getElementById('input-check-booth').value;
+    if (!boothKey) { showToast('⚠️ กรุณาเลือกบูธก่อน'); return; }
+    const name = document.getElementById('input-check-name').value.trim();
+    if (!name) { showToast('⚠️ กรุณากรอกชื่อหนังสือ'); return; }
+    const author   = document.getElementById('input-check-author').value.trim();
+    const price    = parseInt(document.getElementById('input-check-price').value) || 0;
+    const priority = document.getElementById('input-check-priority').value;
+    const num      = boothList.find(b => b.name === boothKey)?.num || '';
+    if (!planData[boothKey]) planData[boothKey] = { num, books: [] };
+    planData[boothKey].books.push({ title:name, author, price, priority, bought:false, img:newBookImg });
+    newBookImg = null;
+    const area = document.getElementById('img-upload-area');
+    if (area) { area.classList.remove('has-img'); document.getElementById('img-upload-preview').innerHTML='📷<br><span style="font-size:12px;color:var(--text-light);">แตะเพื่อเลือกรูป</span>'; }
+    renderBooths(); renderPlan(); renderCheck(); scheduleSync();
+    closeModal('check-modal');
+    ['input-check-name','input-check-author','input-check-price'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  }
+
+  function addWish() {
+    const booth = document.getElementById('input-wbooth-select').value;
+    const bookIdx = document.getElementById('input-wbook-select').value;
+    const priority = document.getElementById('input-wpriority').value;
+    if (!booth || bookIdx==='') { showToast('⚠️ กรุณาเลือกบูธและหนังสือ'); return; }
+    planData[booth].books[parseInt(bookIdx)].priority = priority;
+    renderPlan(); renderCheck(); scheduleSync(); closeModal('wish-modal');
+  }
+
+  function handleImgUpload(input) {
+    const file = input.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      newBookImg = e.target.result;
+      const area = document.getElementById('img-upload-area');
+      area.classList.add('has-img');
+      document.getElementById('img-upload-preview').innerHTML = `<img src="${newBookImg}" style="width:100%;max-height:130px;object-fit:contain;border-radius:8px;">`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── DETAIL SHEET ──
+  function openDetail(book, boothName, boothNum) {
+    detailBook = book; detailBoothName = boothName;
+    const priorityLabel = {'p-high':'🔴 ต้องได้','p-med':'🟡 อยากได้','p-low':'🟢 ถ้ามีงบ'}[book.priority]||'';
+    const imgWrap = document.getElementById('detail-img-wrap');
+    imgWrap.innerHTML = book.img ? `<img class="detail-book-img" src="${book.img}" alt="">` : `<div class="detail-book-placeholder">📖</div>`;
+    document.getElementById('detail-title').textContent = book.title;
+    document.getElementById('detail-meta').innerHTML = `<span class="check-booth-tag">${boothName}${boothNum?' '+boothNum:''}</span>${book.author?`<span>${book.author}</span>`:''}${priorityLabel?`<span>${priorityLabel}</span>`:''}`;
+    document.getElementById('detail-price').textContent = book.price ? '฿'+book.price : '';
+    const btn = document.getElementById('detail-buy-btn');
+    btn.textContent = book.bought ? '↩️ ยกเลิกซื้อ' : '✅ ซื้อแล้ว!';
+    btn.className = 'detail-buy-btn '+(book.bought?'bought':'unbought');
+    document.getElementById('detail-overlay').classList.add('open');
+  }
+  function closeDetail(e) {
+    if (e && e.target!==document.getElementById('detail-overlay')) return;
+    document.getElementById('detail-overlay').classList.remove('open'); detailBook=null;
+  }
+  function toggleBuyFromDetail() {
+    if (!detailBook) return;
+    detailBook.bought = !detailBook.bought;
+    usedBudget = Object.values(planData).reduce((s,d)=>s+d.books.filter(b=>b.bought).reduce((a,b)=>a+b.price,0),0);
+    updateDonut(); renderPlan(); renderCheck(); scheduleSync();
+    const btn = document.getElementById('detail-buy-btn');
+    btn.textContent = detailBook.bought ? '↩️ ยกเลิกซื้อ' : '✅ ซื้อแล้ว!';
+    btn.className = 'detail-buy-btn '+(detailBook.bought?'bought':'unbought');
+    showToast(detailBook.bought ? `✅ ซื้อ "${detailBook.title}" แล้ว!` : `↩️ ยกเลิก "${detailBook.title}"`);
+  }
+
+  // ── INIT ──
+  (async () => {
+    await loadFromSheet();
+    updateDonut(); renderBooths(); renderPlan(); renderCheck();
+  })();
+</script>
+</body>
+</html>
