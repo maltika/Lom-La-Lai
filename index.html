@@ -6,8 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lom-La-Lai</title>
   <link
-    href="https://script.google.com/macros/s/AKfycbxQPjW_VxCFPlKwzfeQJ9aC03lAubwSIFDH7Kv3uOtn8C8qeXkXYXkP4D12NUwnXNW8lg/exec"
-    rel="stylesheet" />
+   href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Mitr:wght@400;500;600&display=swap"
+   rel="stylesheet"
+  />
+
   <style>
     :root {
       --sage: #8aab7e;
@@ -1674,7 +1676,7 @@
 
   <script>
     const SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbxtLag-6cYsqITFKRDtdDm3ZCcDsiu7Bbt6Le2eCVa461wxrIQ2ty33egbXhw3NjYy3_g/exec";
+      "https://script.google.com/macros/s/AKfycbzuxeNSvJ7ygxTmCjPBT9yTAkO6be6VRYk5BfybbgaYNooBZszXaPCNfK7mbBVqOsMaGQ/exec";
 
     let totalBudget = 500,
       usedBudget = 0;
@@ -1841,14 +1843,27 @@
 
         const res = await fetch(SCRIPT_URL, {
           method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain" },
+          // ห้ามใส่ mode: "no-cors" เพื่อให้ส่ง body ขนาดใหญ่ได้สมบูรณ์
+          headers: { "Content-Type": "text/plain" }, 
           body: JSON.stringify(payload),
         });
 
-        setSyncStatus("ok");
+        const result = await res.json(); // รอรับข้อมูลกลับมา
+        
+        if (result.ok) {
+          // อัปเดตข้อมูลในหน้าเว็บด้วย URL จริงที่ได้จาก Google Drive (แทนที่ Base64)
+          if (result.planData) {
+            planData = result.planData;
+          }
+          setSyncStatus("ok");
+          renderPlan();
+          renderCheck();
+        } else {
+          console.error("Server Error:", result.error);
+          setSyncStatus("error");
+        }
       } catch (e) {
-        console.error("Save Error:", e);
+        console.error("Network Error:", e);
         setSyncStatus("error");
       }
       isSyncing = false;
