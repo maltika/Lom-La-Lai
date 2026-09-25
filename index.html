@@ -1842,6 +1842,13 @@
         Lom-La-Lai
         <span id="sync-status" style="font-size: 14px; vertical-align: middle"></span>
       </h1>
+      <div style="max-width:560px;margin:12px auto 0;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">
+        <select id="event-selector" aria-label="เลือกงานหนังสือ" onchange="switchEvent(this.value)"
+          style="flex:1;min-width:220px;max-width:420px;padding:10px 12px;border:1px solid rgba(255,255,255,.5);border-radius:12px;background:#fff;color:var(--text);font:600 13px Sarabun,sans-serif;">
+          <option value="event_default">กำลังโหลดรายการงาน...</option>
+        </select>
+        <button type="button" onclick="createNewEvent()" style="padding:10px 14px;border:1px solid rgba(255,255,255,.6);border-radius:12px;background:rgba(255,255,255,.18);color:white;font:600 13px Sarabun,sans-serif;cursor:pointer;white-space:nowrap;">＋ เพิ่มงาน</button>
+      </div>
     </div>
 
     <div class="content">
@@ -2237,7 +2244,7 @@
 
   <script>
     const SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbwUSyTmCEph9Qjk-xK8H3Y-79Lz9Bgt7xKidHqX-OTT9OxetKaHOBLM2byMhfOD75X19g/exec";
+      "https://script.google.com/macros/s/AKfycbxM72FentqfpbVBNVzjL4yZSxVAaZ-HYReVu08sRjqqHjAUr8xIdZJC_JuHDPjufEqOPw/exec";
 
     let budgetVenue = 500;
     let budgetShopee = 200;
@@ -2246,6 +2253,13 @@
 
     let detailBook = null, detailBoothName = null;
     let isSyncing = false;
+    let serverRevision = 0;
+    let saveQueued = false;
+    <!-- let currentEventId = "event_default"; -->
+    let currentEventId = "event_bookfair_31";
+    let eventList = [];
+    let switchingEvent = false;
+    let localChangeVersion = 0;
     let editBookMode = "check";
     let newBookImg = null, editBookImg = null, wishBookImg = null, checkBookImg = null;
 
@@ -2405,68 +2419,224 @@
       }
     }
 
+    function localStorageKey(eventId = currentEventId) {
+      return `lom_la_lai_data_${eventId}`;
+    }
+
     function saveToLocal() {
       const appState = { planData, boothList, budgetVenue, budgetShopee };
+      localStorage.setItem(localStorageKey(), JSON.stringify(appState));
+      // Keep a copy under the legacy key for compatibility with the old single-event page.
       localStorage.setItem("lom_la_lai_data", JSON.stringify(appState));
     }
 
-    function loadFromLocal() {
-      const saved = localStorage.getItem("lom_la_lai_data");
+    function loadFromLocal(eventId = currentEventId) {
+      const saved = localStorage.getItem(localStorageKey(eventId)) ||
+        (eventId === "event_default" ? localStorage.getItem("lom_la_lai_data") : null);
       if (saved) {
         const data = JSON.parse(saved);
-        planData = data.planData;
-        boothList = data.boothList;
-        budgetVenue = data.budgetVenue;
-        budgetShopee = data.budgetShopee;
+        planData = data.planData || {};
+        boothList = data.boothList || [];
+        budgetVenue = Number(data.budgetVenue ?? 500);
+        budgetShopee = Number(data.budgetShopee ?? 200);
         return true;
       }
       return false;
     }
 
-    async function loadFromSheet() {
-      if (!SCRIPT_URL || SCRIPT_URL.includes("YOUR_")) return;
+    async function fetchEvents() {
+      const res = await fetch(`${SCRIPT_URL}?action=events`, {
+        method: "GET", redirect: "follow", cache: "no-store"
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "โหลดรายการงานไม่สำเร็จ");
+      eventList = Array.isArray(data.events) ? data.events : [];
+      const selector = document.getElementById("event-selector");
+      selector.innerHTML = "";
+      eventList.forEach(ev => {
+        const option = document.createElement("option");
+        option.value = ev.id || ev.eventId;
+        option.textContent = ev.name || ev.eventName || option.value;
+        selector.appendChild(option);
+      });
+      if (!eventList.some(ev => (ev.id || ev.eventId) === currentEventId)) {
+        currentEventId = eventList[0]?.id || eventList[0]?.eventId || "event_default";
+      }
+      selector.value = currentEventId;
+    }
+
+    async function loadFromSheet(eventId = currentEventId) {
+      if (!SCRIPT_URL || SCRIPT_URL.includes("YOUR_")) return false;
       setSyncStatus("loading");
       try {
-        const res = await fetch(SCRIPT_URL, { method: "GET", redirect: "follow" });
+        const res = await fetch(`${SCRIPT_URL}?eventId=${encodeURIComponent(eventId)}`, {
+          method: "GET", redirect: "follow", cache: "no-store"
+        });
         const data = await res.json();
-        if (data.ok) {
-          planData = data.planData || planData;
-          boothList = data.boothList || boothList;
-          budgetVenue = data.budgetVenue || 500;
-          budgetShopee = data.budgetShopee || 200;
-          migrateNumericDays();
-          setSyncStatus("ok", "อัปเดตข้อมูลล่าสุดแล้ว");
-          renderPlan(); renderCheck(); renderBooths(); updateDonut();
-        } else setSyncStatus("error");
-      } catch (e) { setSyncStatus("error"); }
+        if (!data.ok) throw new Error(data.error || "โหลดข้อมูลไม่สำเร็จ");
+
+        // Ignore a delayed response if the user has already switched events.
+        if (eventId !== currentEventId) return false;
+
+        serverRevision = Number(data.revision) || 0;
+        planData = data.planData || {};
+        boothList = data.boothList || [];
+        budgetVenue = Number(data.budgetVenue ?? 500);
+        budgetShopee = Number(data.budgetShopee ?? 200);
+        migrateNumericDays();
+        saveToLocal();
+        setSyncStatus("ok", "โหลดข้อมูลของงานแล้ว");
+        renderPlan();
+        renderCheck();
+        renderBooths();
+        updateDonut();
+        return true;
+      } catch (e) {
+        console.error("Load error:", e);
+        setSyncStatus("error");
+        showToast("⚠️ โหลดข้อมูลจาก Google Sheets ไม่สำเร็จ");
+        return false;
+      }
     }
 
-    let saveTimer = null;
-    function scheduleSync() {
-      saveToLocal();
+    async function switchEvent(eventId) {
+      if (!eventId || eventId === currentEventId || switchingEvent) return;
+      if (isSyncing) {
+        showToast("กำลังบันทึกข้อมูลอยู่ รอสักครู่นะ");
+        document.getElementById("event-selector").value = currentEventId;
+        return;
+      }
+      switchingEvent = true;
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveToSheet, 2000);
+      currentEventId = eventId;
+      serverRevision = 0;
+      loadFromLocal(eventId);
+      migrateNumericDays();
+      renderPlan();
+      renderCheck();
+      renderBooths();
+      updateDonut();
+      try {
+        await loadFromSheet(eventId);
+      } finally {
+        switchingEvent = false;
+        document.getElementById("event-selector").value = currentEventId;
+      }
     }
 
-    async function saveToSheet() {
-      if (!SCRIPT_URL || SCRIPT_URL.includes("YOUR_") || isSyncing) return;
-      isSyncing = true;
-      setSyncStatus("saving");
+    async function createNewEvent() {
+      const name = prompt("ตั้งชื่องานหนังสือใหม่:");
+      if (!name || !name.trim()) return;
       try {
-        const payload = { action: "save", planData, boothList, budgetVenue, budgetShopee };
         const res = await fetch(SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ action: "createEvent", name: name.trim() })
         });
         const result = await res.json();
+        if (!result.ok) throw new Error(result.error || "สร้างงานไม่สำเร็จ");
+        await fetchEvents();
+        const createdId = result.event?.id || result.event?.eventId || result.eventId || result.id;
+        if (createdId) {
+          const selector = document.getElementById("event-selector");
+          if ([...selector.options].some(o => o.value === createdId)) {
+            selector.value = createdId;
+            await switchEvent(createdId);
+          }
+        }
+        showToast("สร้างงานใหม่เรียบร้อย");
+      } catch (e) {
+        console.error("Create event error:", e);
+        showToast("❌ สร้างงานไม่สำเร็จ ตรวจสอบรูปแบบ response ของ Code.gs");
+      }
+    }
+
+    let saveTimer = null;
+
+    function scheduleSync() {
+      localChangeVersion++;
+
+      saveToLocal();
+
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveToSheet();
+      }, 1200);
+    }
+
+    async function saveToSheet() {
+      if (!SCRIPT_URL || SCRIPT_URL.includes("YOUR_")) return;
+
+      // ถ้ากำลังบันทึก ให้ตั้งคิวไว้
+      if (isSyncing) {
+        saveQueued = true;
+        return;
+      }
+
+      isSyncing = true;
+      saveQueued = false;
+
+      const snapshotVersion = localChangeVersion;
+
+      // Snapshot ณ เวลาที่เริ่มบันทึก
+      const payload = {
+        action: "save",
+        eventId: currentEventId,
+        planData: JSON.parse(JSON.stringify(planData)),
+        boothList: JSON.parse(JSON.stringify(boothList)),
+        budgetVenue,
+        budgetShopee,
+        revision: serverRevision
+      };
+
+      setSyncStatus("saving");
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+
         if (result.ok) {
-          if (result.planData) planData = result.planData;
+          serverRevision = Number(result.revision) || serverRevision;
+
+          // ไม่เอาข้อมูลจาก response มาเขียนทับ state ปัจจุบัน
           setSyncStatus("ok", "บันทึกเรียบร้อย");
-          renderPlan(); renderCheck();
-        } else setSyncStatus("error");
-      } catch (e) { setSyncStatus("error"); }
-      isSyncing = false;
+
+          // ถ้ามีการแก้ระหว่างบันทึก ให้บันทึกซ้ำ
+          if (localChangeVersion !== snapshotVersion) {
+            saveQueued = true;
+          }
+
+        } else if (result.conflict) {
+          setSyncStatus("error", "ข้อมูลขัดแย้ง กรุณาโหลดข้อมูลใหม่");
+          showToast("⚠️ ข้อมูลเปลี่ยนจากอุปกรณ์อื่น กรุณารีโหลดก่อนแก้ต่อ");
+
+        } else {
+          setSyncStatus("error");
+          showToast("❌ บันทึกไม่สำเร็จ");
+        }
+
+      } catch (e) {
+        console.error("Save error:", e);
+        setSyncStatus("error");
+        showToast("❌ เชื่อมต่อ Google Sheets ไม่สำเร็จ");
+
+      } finally {
+        isSyncing = false;
+
+        // บันทึกซ้ำเมื่อมีการแก้ไขระหว่างคำขอก่อนหน้า
+        if (saveQueued) {
+          saveQueued = false;
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(saveToSheet, 300);
+        }
+      }
     }
 
     // ── Budget View Switching ──
@@ -3246,17 +3416,24 @@
     (async () => {
       initAuth();
 
-      const hasLocal = loadFromLocal();
-      if (hasLocal) {
-        migrateNumericDays(); // ← migrate ข้อมูลเก่า
-        updateDonut(); renderBooths(); renderPlan(); renderCheck();
-      } else {
-        // ไม่มี local → migrate ข้อมูล default
-        migrateNumericDays();
-        updateDonut(); renderBooths(); renderPlan(); renderCheck();
+      try {
+        await fetchEvents();
+      } catch (e) {
+        console.error("Events list error:", e);
+        showToast("⚠️ โหลดรายการงานไม่สำเร็จ");
       }
 
-      await loadFromSheet();
+      loadFromLocal(currentEventId);
+      migrateNumericDays();
+
+      updateDonut();
+      renderBooths();
+      renderPlan();
+      renderCheck();
+
+      // โหลดจาก server ก่อนเริ่มบันทึกข้อมูล
+      await loadFromSheet(currentEventId);
+
       saveToLocal();
       initMapZoom();
     })();
